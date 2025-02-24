@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import random
-from typing import Iterable, Optional, Sequence, Tuple, Union
+# from re import X  # re.X not used!
+from typing import Iterable, Optional, Sequence, Tuple, Union, List
 
 import numba
 import numpy as np
@@ -43,7 +44,17 @@ def index_to_position(index: Index, strides: Strides) -> int:
         Position in storage
     """
 
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 2.1.
+    # see graph below:
+    # https://www.361shipin.com/blog/1504769004764467202
+    # index starting from 0
+    # storage starting from 0
+    position = 0
+    for ind , stride in zip(index, strides):
+        position += ind * stride
+    return position
+
+    # raise NotImplementedError("Need to implement for Task 2.1")
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -59,12 +70,20 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 2.1.
+    cur_ord = ordinal + 0
+    # example: tensor([5, 2]), strides(2, 1)
+    # loop from larger number to smaller number, then start to loop from the end of input tensor
+    for i in range(len(shape) - 1, -1, -1):  # reversly loop over the tensor, e.g. i=4, 3, 2, 1...
+        # store back to out_index list
+        sh = shape[i]
+        out_index[i] = int(cur_ord % sh)  # 9%2=1 (remainder)
+        cur_ord = cur_ord // sh  # 9//2=4 (divided answer)
+
+    # raise NotImplementedError("Need to implement for Task 2.1")
 
 
-def broadcast_index(
-    big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex
-) -> None:
+def broadcast_index(big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex) -> None:
     """
     Convert a `big_index` into `big_shape` to a smaller `out_index`
     into `shape` following broadcasting rules. In this case
@@ -81,7 +100,18 @@ def broadcast_index(
     Returns:
         None
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 2.2.
+
+    # loop over input shape
+    for i, j in enumerate(shape):
+        # situation when tensor is not 0
+        if j > 1:
+            out_index[i] = big_index[i + len(big_shape) - len(shape)]
+        # situation when tensor is 0
+        else:
+            out_index[i] = 0
+    return None
+    # raise NotImplementedError("Need to implement for Task 2.2")
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
@@ -98,7 +128,45 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     Raises:
         IndexingError : if cannot broadcast
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 2.2.
+    x = shape1
+    y = shape2
+
+    # decide the length of the new union shpae
+    if len(x) >= len(y):
+        length = len(x)
+    else:
+        length = len(y)
+
+    x_reverse = list(reversed(x))
+    y_reverse = list(reversed(y))
+
+    # create a zero new union shape
+    z_reverse = [0] * length
+
+    # loop over original 2 shapes
+    for i in range(length):
+        if i >= len(x):
+            z_reverse[i] = y_reverse[i]
+        elif i >= len(y):
+            z_reverse[i] = x_reverse[i]
+        else:
+            if x_reverse[i] >= y_reverse[i]:
+                ans = x_reverse[i]
+            else:
+                ans = y_reverse[i]
+            z_reverse[i] = ans
+
+            # situation if cannot broadcast
+            if x_reverse[i] != z_reverse[i] and x_reverse[i] != 1:
+                raise IndexingError("Broadcast failure")
+            if y_reverse[i] != z_reverse[i] and y_reverse[i] != 1:
+                raise IndexingError("Broadcast failure")
+
+    # return broadcasted shape
+    return tuple(reversed(z_reverse))
+
+    # raise NotImplementedError("Need to implement for Task 2.2")
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
@@ -172,11 +240,6 @@ class TensorData:
         if isinstance(index, tuple):
             aindex = array(index)
 
-        # Pretend 0-dim shape is 1-dim shape of singleton
-        shape = self.shape
-        if len(shape) == 0 and len(aindex) != 0:
-            shape = (1,)
-
         # Check for errors
         if aindex.shape[0] != len(self.shape):
             raise IndexingError(f"Index {aindex} must be size of {self.shape}.")
@@ -214,7 +277,7 @@ class TensorData:
         Permute the dimensions of the tensor.
 
         Args:
-            *order: a permutation of the dimensions
+            order (list): a permutation of the dimensions
 
         Returns:
             New `TensorData` with the same storage and a new dimension order.
@@ -223,7 +286,24 @@ class TensorData:
             range(len(self.shape))
         ), f"Must give a position to each dimension. Shape: {self.shape} Order: {order}"
 
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.1.
+
+        # create new shape and stride tuples to store results
+        # use list [] first, and then turn list into tuple at the end
+        # otherwise, there'll be typing error!
+        current_shape: List[int] = []
+        current_stride: List[int] = []
+
+        # loop over
+        for i, j in enumerate(order):
+            current_shape.append(self.shape[j],)
+            current_stride.append(self._strides[j])
+
+        # New `TensorData` with the same storage and a new dimension order
+        result = TensorData(self._storage, shape=tuple(current_shape), strides=tuple(current_stride))
+        return result
+
+        # raise NotImplementedError("Need to implement for Task 2.1")
 
     def to_string(self) -> str:
         s = ""

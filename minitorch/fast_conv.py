@@ -6,8 +6,8 @@ from numba import njit, prange
 from .autodiff import Context
 from .tensor import Tensor
 from .tensor_data import (
-    MAX_DIMS,
-    Index,
+    # MAX_DIMS,
+    # Index,
     Shape,
     Strides,
     broadcast_index,
@@ -81,7 +81,46 @@ def _tensor_conv1d(
     s2 = weight_strides
 
     # TODO: Implement for Task 4.1.
-    raise NotImplementedError("Need to implement for Task 4.1")
+
+    for i in prange(out_size):
+
+        # to index
+        out_index = np.empty(len(out_shape), np.int32)  # uint32 isn't working?
+        to_index(i, out_shape, out_index)
+
+        # calculate out position
+        batch, channel, width_now = out_index
+        out_position = batch * out_strides[0] + channel * \
+            out_strides[1] + width_now * out_strides[2]
+
+        # j in channel
+        for j in prange(in_channels):
+            # kw_now is current kw
+            for kw_now in range(kw):
+
+                # situation if reverse is true
+                if reverse:
+                    kw_now = kw - kw_now - 1
+
+                # s2 = weight_strides
+                position_now = channel * s2[0] + j * s2[1] + kw_now * s2[2]
+                value = float(0)  # float!
+
+                # situation if reverse is false and (current_width + kw_now) < width of input
+                if not reverse and width_now + kw_now < width:
+                    # s1 = input_strides
+                    # width_now + kw_now)
+                    value = input[batch * s1[0] + j * s1[1] + (width_now + kw_now) * s1[2]]
+
+                # situation if reverse is true and (current_width - kw_now) >= 0
+                elif reverse and 0 <= width_now - kw_now:
+                    # s1 = input_strides
+                    # width_now - kw_now
+                    value = input[batch * s1[0] + j * s1[1] + (width_now - kw_now) * s1[2]]
+
+                out[out_position] += value * weight[position_now]
+
+    # raise NotImplementedError("Need to implement for Task 4.1")
 
 
 tensor_conv1d = njit(parallel=True)(_tensor_conv1d)
@@ -207,7 +246,50 @@ def _tensor_conv2d(
     s20, s21, s22, s23 = s2[0], s2[1], s2[2], s2[3]
 
     # TODO: Implement for Task 4.2.
-    raise NotImplementedError("Need to implement for Task 4.2")
+    # similar to _tensor_conv1d
+    for i in prange(out_size):
+
+        # to index
+        out_index = np.empty(len(out_shape), np.int32)  # uint32 isn't working?
+        to_index(i, out_shape, out_index)
+
+        # calculate out position
+        batch, channel, height_now, width_now = out_index
+        out_pos = batch * out_strides[0] + channel * out_strides[1] \
+            + height_now * out_strides[2] + width_now * out_strides[3]
+
+        # j in channel
+        for j in prange(in_channels):
+            # _tensor_conv2d has one more dimension than _tensor_conv1d
+            # kh_now is current kw
+            for kh_now in range(kh):
+                # kw_now is current kw
+                for kw_now in range(kw):
+
+                    # situation if reverse is true
+                    if reverse:
+                        kh_now = kh - kh_now - 1
+                        kw_now = kw - kw_now - 1
+
+                    # s20, s21, s22, s23 = s2[0], s2[1], s2[2], s2[3]
+                    # j in channel
+                    position_now = channel * s20 + j * s21 + kh_now *\
+                        s22 + kw_now * s23
+                    value = float(0)  # float
+
+                    # situation if reverse is false, height_now + kh_now < height, and width_now + kw_now < width
+                    if not reverse and height_now + kh_now < height and width_now + kw_now < width:
+                        # height_now + kh_now and width_now + kw_now
+                        value = input[batch * s10 + j * s11 + (height_now + kh_now) * s12 + (width_now + kw_now) * s13]
+
+                    # situation if reverse is true, 0 <= height_now - kh_now, and 0 <= width_now - kw_now
+                    elif reverse and 0 <= height_now - kh_now and 0 <= width_now - kw_now:
+                        # height_now - kh_now and width_now - kw_now
+                        value = input[batch * s10 + j * s11 + (height_now - kh_now) * s12 + (width_now - kw_now) * s13]
+
+                    out[out_pos] += value * weight[position_now]
+
+    # raise NotImplementedError("Need to implement for Task 4.2")
 
 
 tensor_conv2d = njit(parallel=True, fastmath=True)(_tensor_conv2d)
