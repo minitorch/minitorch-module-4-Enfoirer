@@ -22,7 +22,22 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 1.1.
+    # answer from module 1
+    vals1 = [v for v in vals]
+    vals2 = [v for v in vals]
+    vals1[arg] = vals1[arg] + epsilon
+    vals2[arg] = vals2[arg] - epsilon
+    delta = f(*vals1) - f(vals2)
+    return delta / (2 * epsilon)
+
+    # vals1 = list(vals)
+    # vals1[arg] -= epsilon
+    # vals2 = list(vals)
+    # vals2[arg] += epsilon
+    # return (f(*vals2) - f(*vals1)) / (2 * epsilon)
+
+    # raise NotImplementedError("Need to implement for Task 1.1")
 
 
 variable_count = 1
@@ -60,7 +75,38 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 1.4.
+    # reference: https://en.wikipedia.org/wiki/Topological_sorting
+
+    # list to contain the sorted nodes
+    result: List[Variable] = []
+    # use set() method to convert any of the iterable to sequence of iterable elements with distinct elements
+    visited = set()
+
+    def visit(var: Variable) -> None:
+
+        # if not leaf, then visit
+        if var.is_constant():
+            return
+
+        # pass if visited before
+        if var.unique_id in visited:
+            return
+        # add current nonde into visited set
+        visited.add(var.unique_id)
+
+        # visit parents node
+        for parent in var.parents:
+            visit(parent)
+
+        # add current node into the front of result list
+        result.insert(0, var)
+
+    # call visit function
+    visit(variable)
+
+    return result
+    # raise NotImplementedError("Need to implement for Task 1.4")
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -74,7 +120,19 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 1.4.
+    # answer from module 1
+    top_sorted_nodes = topological_sort(variable)
+    derivatives = {variable.unique_id: deriv}
+
+    for node in top_sorted_nodes:
+        node_deriv = derivatives[node.unique_id]
+        if node.is_leaf():
+            node.accumulate_derivative(node_deriv)
+            continue
+        for parent, parent_deriv in node.chain_rule(node_deriv):
+            derivatives[parent.unique_id] = derivatives.get(parent.unique_id, 0) + parent_deriv
+    # raise NotImplementedError("Need to implement for Task 1.4")
 
 
 @dataclass

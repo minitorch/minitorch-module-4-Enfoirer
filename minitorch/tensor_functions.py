@@ -99,51 +99,90 @@ class Add(Function):
 class Mul(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.3.
+        ctx.save_for_backward(a, b)
+        return a.f.mul_zip(a, b)
+        # raise NotImplementedError("Need to implement for Task 2.3")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.4.
+        a, b = ctx.saved_values
+
+        # use expand function
+        return a.expand(b * grad_output), b.expand(a * grad_output)
+        # raise NotImplementedError("Need to implement for Task 2.4")
 
 
 class Sigmoid(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.3.
+        out = t1.f.sigmoid_map(t1)
+        ctx.save_for_backward(out)
+        return out
+        # raise NotImplementedError("Need to implement for Task 2.3")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.4.
+        t = ctx.saved_values[0]
+        return grad_output.f.mul_zip(
+            grad_output, t.f.mul_zip(t, t.f.add_zip(t.f.neg_map(t), tensor([1.0])))
+        )
+        # raise NotImplementedError("Need to implement for Task 2.4")
 
 
 class ReLU(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.3.
+        ctx.save_for_backward(t1)
+        return t1.f.relu_map(t1)
+        # raise NotImplementedError("Need to implement for Task 2.3")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.4.
+        x_prime = ctx.saved_values[0]
+        return grad_output.f.relu_back_zip(x_prime, grad_output)
+        # raise NotImplementedError("Need to implement for Task 2.4")
 
 
 class Log(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.3.
+        ctx.save_for_backward(t1)
+        return t1.f.log_map(t1)
+        # raise NotImplementedError("Need to implement for Task 2.3")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.4.
+        t: Tensor = ctx.saved_values[0]
+        return t.f.log_back_zip(t, grad_output)
+        # raise NotImplementedError("Need to implement for Task 2.4")
 
 
 class Exp(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.3.
+        res = t1.f.exp_map(t1)
+        ctx.save_for_backward(res)
+        return res
+
+        # ctx.save_for_backward(t1)
+        # return t1.f.exp_map(t1)
+        # raise NotImplementedError("Need to implement for Task 2.3")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.4.
+        t: Tensor = ctx.saved_values[0]
+        return t.f.mul_zip(grad_output, t)
+        # raise NotImplementedError("Need to implement for Task 2.4")
 
 
 class Sum(Function):
@@ -170,37 +209,96 @@ class All(Function):
 class LT(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.3.
+        return a.f.lt_zip(a, b)
+        # raise NotImplementedError("Need to implement for Task 2.3")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.4.
+        nt1 = grad_output.zeros()
+        nt2 = grad_output.zeros()
+        return nt1, nt2
+        # raise NotImplementedError("Need to implement for Task 2.4")
 
 
 class EQ(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.3.
+        return a.f.eq_zip(a, b)
+        # raise NotImplementedError("Need to implement for Task 2.3")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.4.
+        nt1 = grad_output.zeros()
+        nt2 = grad_output.zeros()
+        return nt1, nt2
+        # raise NotImplementedError("Need to implement for Task 2.4")
 
 
 class IsClose(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.3.
+        return a.f.is_close_zip(a, b)
+        # raise NotImplementedError("Need to implement for Task 2.3")
 
 
 class Permute(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.3.
+
+        # create a tensor and a order
+        tensor1 = a._tensor
+        order1 = order.to_numpy().astype(np.int32)
+
+        # save shape and strides of the tensor for backward
+        shape = tensor1.shape
+        strides = tensor1.strides
+        ctx.save_for_backward(shape, strides)
+
+        # create new shape and strides
+        new_shape = tuple([shape[i] for i in order1])
+        new_strides = tuple([strides[i] for i in order1])
+
+        return minitorch.Tensor.make(tensor1._storage, new_shape, new_strides, backend=a.backend)
+        # raise NotImplementedError("Need to implement for Task 2.3")
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 2.4.
+        # use saved shape and strides
+        (shape, strides,) = ctx.saved_values
+
+        # make the original tensor
+        result = minitorch.Tensor.make(
+            grad_output._tensor._storage,
+            shape, strides,
+            backend=grad_output.backend)
+        return (result, 0.0,)  # float -> 0.0
+
+        # other attempt:
+        # (order, ) = ctx.saved_values
+        # new_order = minitorch.tensor([0]) * len(order)
+        # for i in range(len(order)):
+        #     new_order[order[i]] = i
+        # # new_tensor_data = grad_output._tensor.permute(*order)
+        # return a._new(a._tensor.permute(*order))
+
+        # order = ctx.saved_values
+        # result = []
+        # for i in sorted(enumerate(order), key=lambda i: i[1]):
+        #     result.append(i[0])
+        # order = [a[0] for a in sorted(enumerate(order), key=lambda a: a[1])]
+        # return grad_output.a._new(grad_output._tensor.permute(*result))
+
+        # reverse_order = [a.index(i) for i in range(len(order))]
+        # return grad_output._new(grad_output._tensor.permute(*reverse_order))
+
+        # raise NotImplementedError("Need to implement for Task 2.4")
 
 
 class View(Function):
